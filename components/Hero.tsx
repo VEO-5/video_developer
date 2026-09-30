@@ -1,4 +1,6 @@
 import Image from "next/image";
+import BookCallButton from "@/components/BookCallButton";
+import FollowButton from "@/components/FollowButton";
 import { profile } from "@/data/content";
 
 export default function Hero() {
@@ -38,19 +40,9 @@ export default function Hero() {
               {profile.previously}
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href={profile.bookCall.href}
-                className="inline-flex h-10 items-center rounded-xl bg-[#111110] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#2b2b28]"
-              >
-                {profile.bookCall.label}
-              </a>
-              <a
-                href={profile.follow.href}
-                className="inline-flex h-10 items-center rounded-xl bg-[#efeee9] px-5 text-[14px] font-medium text-ink transition-colors hover:bg-[#e4e3dc]"
-              >
-                {profile.follow.label}
-              </a>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <BookCallButton href={profile.bookCall.href} />
+              <FollowButton href={profile.follow.href} />
             </div>
           </div>
 
