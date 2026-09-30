@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Emmanuel E. — Motion Designer & Video Creator",
+  title: "Emmanuel Eromosele. — Motion Designer & Video Creator",
   description:
     "Motion Designer & Video Creator for startups in SaaS, Tech, AI & Web3. Previously Creative Director & Video Editor at YouTube.",
 };
