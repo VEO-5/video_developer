@@ -7,7 +7,7 @@ export default function BookCallButton({ href }: { href: string }) {
     <ChromeButton
       tone="auto"
       size="default"
-      speed={2}
+      speed={1.25}
       interactive
       onClick={() => {
         window.location.assign(href);

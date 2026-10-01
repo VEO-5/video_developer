@@ -18,6 +18,12 @@ export interface ChromeButtonProps
   speed?: number;
   /** Ripple the metal around the pointer and send a wave through it on press. */
   interactive?: boolean;
+  /**
+   * Rendering quality. `high` forces full 4-tap AA + DPR up to 2.
+   * `low` forces single-tap + DPR 1 + 30fps cap. `auto` (default)
+   * starts high and steps down if FPS stays low.
+   */
+  quality?: "auto" | "high" | "low";
 }
 
 const VERTEX = `
@@ -39,6 +45,8 @@ uniform vec2 uPointer;
 uniform float uHover;
 uniform vec3 uPress;
 uniform float uTone;
+uniform float uAA;
+uniform float uFx;
 
 float metal(vec2 px) {
   vec2 uv = (2.0 * px - uRes) / min(uRes.x, uRes.y);
@@ -52,23 +60,26 @@ float metal(vec2 px) {
   float phase = 0.0;
   float shade = 0.0;
 
-  // Pointer: tight dark and bright ripples swirl out from the cursor.
-  vec2 d = (px - uPointer) / uRes.y;
-  float dist = length(d);
-  float near = exp(-dist * dist * 1.5) * uHover;
-  float swirl = sin(dist * 14.0 - uTime * 7.0);
-  phase += swirl * 2.2 * near;
-  shade += swirl * 0.45 * near;
+  // Skipped entirely on low-tier GPUs (uFx == 0) to save ALU.
+  if (uFx > 0.5) {
+    // Pointer: tight dark and bright ripples swirl out from the cursor.
+    vec2 d = (px - uPointer) / uRes.y;
+    float dist = length(d);
+    float near = exp(-dist * dist * 1.5) * uHover;
+    float swirl = sin(dist * 14.0 - uTime * 7.0);
+    phase += swirl * 2.2 * near;
+    shade += swirl * 0.45 * near;
 
-  // Press: a shock front runs out from the click, bright at its leading edge
-  // with a dark trough behind it.
-  float age = uTime - uPress.z;
-  if (age > 0.0 && age < 2.0) {
-    float r = length((px - uPress.xy) / uRes.y);
-    float front = r - age * 4.0;
-    float fade = exp(-age * 1.8);
-    phase += exp(-front * front * 2.0) * fade * 5.0;
-    shade += (exp(-front * front * 8.0) - exp(-(front + 0.45) * (front + 0.45) * 8.0)) * fade * 0.95;
+    // Press: a shock front runs out from the click, bright at its leading edge
+    // with a dark trough behind it.
+    float age = uTime - uPress.z;
+    if (age > 0.0 && age < 2.0) {
+      float r = length((px - uPress.xy) / uRes.y);
+      float front = r - age * 4.0;
+      float fade = exp(-age * 1.8);
+      phase += exp(-front * front * 2.0) * fade * 5.0;
+      shade += (exp(-front * front * 8.0) - exp(-(front + 0.45) * (front + 0.45) * 8.0)) * fade * 0.95;
+    }
   }
 
   // Normalized so a pill's ends and sides share one angular speed.
@@ -84,11 +95,15 @@ float metal(vec2 px) {
 
 void main() {
   float c = 0.0;
-  c += metal(gl_FragCoord.xy + vec2(-0.25, -0.25));
-  c += metal(gl_FragCoord.xy + vec2(0.25, -0.25));
-  c += metal(gl_FragCoord.xy + vec2(-0.25, 0.25));
-  c += metal(gl_FragCoord.xy + vec2(0.25, 0.25));
-  c *= 0.25;
+  if (uAA > 0.5) {
+    c += metal(gl_FragCoord.xy + vec2(-0.25, -0.25));
+    c += metal(gl_FragCoord.xy + vec2(0.25, -0.25));
+    c += metal(gl_FragCoord.xy + vec2(-0.25, 0.25));
+    c += metal(gl_FragCoord.xy + vec2(0.25, 0.25));
+    c *= 0.25;
+  } else {
+    c = metal(gl_FragCoord.xy);
+  }
   // Slightly cool lights and warm shadows read as steel rather than grey.
   vec3 col = mix(vec3(0.09, 0.085, 0.08), vec3(1.0, 1.0, 1.02), c);
   // On a white face the ring sits a little darker so it still frames the button.
@@ -100,7 +115,14 @@ void main() {
 type ChromeGL = {
   gl: WebGLRenderingContext;
   uniforms: Record<
-    "uRes" | "uTime" | "uPointer" | "uHover" | "uPress" | "uTone",
+    | "uRes"
+    | "uTime"
+    | "uPointer"
+    | "uHover"
+    | "uPress"
+    | "uTone"
+    | "uAA"
+    | "uFx",
     WebGLUniformLocation | null
   >;
 };
@@ -152,6 +174,8 @@ function createChromeGL(canvas: HTMLCanvasElement): ChromeGL | null {
       uHover: at("uHover"),
       uPress: at("uPress"),
       uTone: at("uTone"),
+      uAA: at("uAA"),
+      uFx: at("uFx"),
     },
   };
 }
@@ -208,6 +232,7 @@ export const ChromeButton = React.forwardRef<
       size = "default",
       speed = 1,
       interactive = true,
+      quality = "auto",
       className,
       disabled,
       type = "button",
@@ -234,10 +259,12 @@ export const ChromeButton = React.forwardRef<
       speed,
       tone,
       interactive,
+      quality,
     });
     input.current.speed = speed;
     input.current.tone = tone;
     input.current.interactive = interactive;
+    input.current.quality = quality;
 
     const setShellRef = (node: HTMLButtonElement | null) => {
       shellRef.current = node;
@@ -265,11 +292,25 @@ export const ChromeButton = React.forwardRef<
         "(prefers-reduced-motion: reduce)",
       ).matches;
 
+      // Adaptive tiers: 0 = full (DPR<=2, 4-tap AA, FX on, 60fps),
+      // 1 = medium (DPR<=1.5, 4-tap, FX on), 2 = low (DPR 1, 1-tap, FX off, 30fps cap).
+      let tier = state.quality === "low" ? 2 : 0;
+      const maxTier = state.quality === "high" ? 0 : 2;
+      const dprCapFor = (t: number) => (t === 0 ? 2 : t === 1 ? 1.5 : 1);
+      let aa = tier === 2 ? 0 : 1;
+      let fx = tier === 2 ? 0 : 1;
+      let frameInterval = tier >= 2 ? 32 : 0;
+
       let raf = 0;
       let last = 0;
+      let lastDraw = 0;
       let hover = 0;
       let visible = true;
       let first = true;
+      // FPS watcher: downgrade once if sustained low FPS.
+      let frames = 0;
+      let windowStart = 0;
+      let cooldownUntil = 0;
 
       const draw = () => {
         gl.uniform2f(uniforms.uRes, canvas.width, canvas.height);
@@ -280,6 +321,8 @@ export const ChromeButton = React.forwardRef<
         const light =
           state.tone === "auto" ? !shell.closest(".dark") : state.tone === "light";
         gl.uniform1f(uniforms.uTone, light ? 1 : 0);
+        gl.uniform1f(uniforms.uAA, aa);
+        gl.uniform1f(uniforms.uFx, state.interactive ? fx : 0);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         if (first) {
           first = false;
@@ -287,13 +330,48 @@ export const ChromeButton = React.forwardRef<
         }
       };
 
+      const applyTier = (next: number) => {
+        tier = next;
+        aa = tier === 2 ? 0 : 1;
+        fx = tier === 2 ? 0 : 1;
+        frameInterval = tier >= 2 ? 32 : 0;
+        resize();
+      };
+
       const frame = (now: number) => {
-        const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+        // Wall-clock delta with a generous 250ms cap: animation keeps correct
+        // speed down to ~4fps instead of going slow-motion below ~20fps.
+        // last==0 (resume) renders one frame without advancing time.
+        const rawDt = last ? (now - last) / 1000 : 0;
+        const dt = Math.min(0.25, Math.max(0, rawDt));
         last = now;
         const target = state.interactive ? state.hoverTarget : 0;
-        hover += (target - hover) * Math.min(1, dt * 8);
+        // Hover lerp uses real dt so it stays snappy even on slow machines.
+        hover += (target - hover) * Math.min(1, rawDt > 0 ? rawDt * 8 : 0.2);
         state.time += dt * state.speed * (reduceMotion ? 0.2 : 1) * (1 + hover * 1.2);
+
+        // 30fps cap on low tier: skip drawing but keep time advancing.
+        if (frameInterval > 0 && now - lastDraw < frameInterval) {
+          raf = requestAnimationFrame(frame);
+          return;
+        }
+        lastDraw = now;
         draw();
+
+        // Auto-degrade: if we average <35fps over a 2s window, step down.
+        if (state.quality === "auto" && tier < maxTier) {
+          if (!windowStart) windowStart = now;
+          frames += 1;
+          if (now - windowStart >= 2000) {
+            const fps = (frames * 1000) / (now - windowStart);
+            if (fps < 35 && now >= cooldownUntil) {
+              applyTier(tier + 1);
+              cooldownUntil = now + 4000;
+            }
+            frames = 0;
+            windowStart = now;
+          }
+        }
         raf = requestAnimationFrame(frame);
       };
 
@@ -308,7 +386,7 @@ export const ChromeButton = React.forwardRef<
       };
 
       const resize = () => {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(window.devicePixelRatio || 1, dprCapFor(tier));
         canvas.width = Math.max(1, Math.round(shell.clientWidth * dpr));
         canvas.height = Math.max(1, Math.round(shell.clientHeight * dpr));
         gl.viewport(0, 0, canvas.width, canvas.height);
