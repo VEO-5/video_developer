@@ -24,6 +24,12 @@ export interface ChromeButtonProps
    * starts high and steps down if FPS stays low.
    */
   quality?: "auto" | "high" | "low";
+  /**
+   * Extra flow speed while hovered (0 = constant speed, hover only adds
+   * ripples). Previously hardcoded to 1.2, which made idle look 2.2x
+   * slower than hover. Defaults to 0 for predictable speed.
+   */
+  hoverBoost?: number;
 }
 
 const VERTEX = `
@@ -233,6 +239,7 @@ export const ChromeButton = React.forwardRef<
       speed = 1,
       interactive = true,
       quality = "auto",
+      hoverBoost = 0,
       className,
       disabled,
       type = "button",
@@ -260,11 +267,13 @@ export const ChromeButton = React.forwardRef<
       tone,
       interactive,
       quality,
+      hoverBoost,
     });
     input.current.speed = speed;
     input.current.tone = tone;
     input.current.interactive = interactive;
     input.current.quality = quality;
+    input.current.hoverBoost = hoverBoost;
 
     const setShellRef = (node: HTMLButtonElement | null) => {
       shellRef.current = node;
@@ -348,7 +357,13 @@ export const ChromeButton = React.forwardRef<
         const target = state.interactive ? state.hoverTarget : 0;
         // Hover lerp uses real dt so it stays snappy even on slow machines.
         hover += (target - hover) * Math.min(1, rawDt > 0 ? rawDt * 8 : 0.2);
-        state.time += dt * state.speed * (reduceMotion ? 0.2 : 1) * (1 + hover * 1.2);
+        // Constant flow speed by default: hover only drives ripples (uHover),
+        // not the global clock. Set hoverBoost > 0 to re-add a hover kick.
+        state.time +=
+          dt *
+          state.speed *
+          (reduceMotion ? 0.2 : 1) *
+          (1 + hover * state.hoverBoost);
 
         // 30fps cap on low tier: skip drawing but keep time advancing.
         if (frameInterval > 0 && now - lastDraw < frameInterval) {

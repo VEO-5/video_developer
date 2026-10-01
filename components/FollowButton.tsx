@@ -9,7 +9,7 @@ export default function FollowButton({ href }: { href: string }) {
     <ChromeButton
       tone="light"
       size="default"
-      speed={1.25}
+      speed={2}
       interactive
       onClick={() => {
         if (isExternal) {
