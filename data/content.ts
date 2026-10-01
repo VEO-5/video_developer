@@ -60,7 +60,7 @@ export const faqs: Faq[] = [
 ];
 
 export const profile = {
-  name: "Emmanuel E.",
+  name: "Emmanuel Eromosele",
   availability: "Available for new projects",
   currently:
     "Motion Designer & Video Developer for startups in SaaS, Tech & AI.",
@@ -68,7 +68,7 @@ export const profile = {
     "Graphic Designer & Prompt Engineer, working with indie hackers on projects that brought in thousands of users.",
   portrait: {
     src: "/profile_image_v2.webp",
-    alt: "Portrait of Emmanuel E.",
+    alt: "Portrait of Emmanuel Eromosele",
   },
   bookCall: { label: "Book a Call", href: "#book" },
   follow: { label: "Follow me", href: "#follow" },

@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Emmanuel Eromosele. — Motion Designer & Video Creator",
+  title: "Emmanuel Eromosele — Motion Designer & Video Developer",
   description:
-    "Motion Designer & Video Creator for startups in SaaS, Tech, AI & Web3. Previously Creative Director & Video Editor at YouTube.",
+    "Motion Designer & Video Developer for startups in SaaS, Tech & AI. Previously Graphic Designer & Prompt Engineer.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
