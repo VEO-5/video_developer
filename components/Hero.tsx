@@ -1,7 +1,6 @@
 import Image from "next/image";
 import BookCallButton from "@/components/BookCallButton";
 import FollowButton from "@/components/FollowButton";
-import ReflectShader from "@/components/originkit/ui/reflect-shader";
 import { profile } from "@/data/content";
 
 function SocialIcon({ label }: { label: string }) {
@@ -61,37 +60,13 @@ function SocialIcon({ label }: { label: string }) {
 
 export default function Hero() {
   return (
-    <section id="home" className="relative overflow-hidden bg-cream text-ink">
-      {/* reflect-shader background */}
-      <div className="absolute inset-0" aria-hidden="true">
-        <ReflectShader
-          background="#faf9f6"
-          tint="#ffffff"
-          speed={50}
-          brightness={100}
-          thickness={20}
-          chromatic={10}
-          bandGap={20}
-          zoom={295}
-          hover={90}
-          style={{ minWidth: 0, minHeight: 0, width: "100%", height: "100%" }}
-        />
-      </div>
-      {/* readability veil — calms shader in center, keeps edges alive */}
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-cream/80 via-cream/30 to-cream/85"
-        aria-hidden="true"
-      />
-
+    <section id="home" className="bg-cream text-ink">
       {/* thin dark top rule, as in the reference design */}
-      <div
-        className="relative z-10 h-[3px] bg-[#22303f]"
-        aria-hidden="true"
-      />
+      <div className="h-[3px] bg-[#22303f]" aria-hidden="true" />
 
-      <div className="relative z-10 mx-auto w-full max-w-3xl px-6 pt-8 pb-10 sm:pt-12">
-        {/* availability — frosted pill */}
-        <p className="inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-cream/70 px-3 py-1 text-[14px] text-muted shadow-sm backdrop-blur-md">
+      <div className="mx-auto w-full max-w-3xl px-6 pt-8 pb-10 sm:pt-12">
+        {/* availability */}
+        <p className="flex items-center gap-2 text-[14px] text-muted">
           <span
             className="inline-block h-2 w-2 rounded-full bg-[#22c55e]"
             aria-hidden="true"
@@ -101,7 +76,7 @@ export default function Hero() {
 
         {/* main row */}
         <div className="mt-6 grid gap-8 md:grid-cols-[1.35fr_1fr] md:items-start">
-          <div className="rounded-2xl border border-white/60 bg-cream/60 p-5 shadow-[0_12px_40px_rgba(17,17,16,0.08)] backdrop-blur-xl sm:p-6">
+          <div>
             <h1 className="text-[30px] font-semibold leading-none tracking-tight sm:text-[32px]">
               {profile.name}
             </h1>
@@ -126,8 +101,8 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* portrait — keep sharp, lift above blur for hierarchy */}
-          <div className="relative aspect-[4/5] w-full max-w-[240px] overflow-hidden bg-[#e9e7e0] shadow-[0_20px_50px_rgba(17,17,16,0.15)] ring-1 ring-ink/10 md:justify-self-end">
+          {/* portrait */}
+          <div className="relative aspect-[4/5] w-full max-w-[240px] overflow-hidden bg-[#e9e7e0] md:justify-self-end">
             <Image
               src={profile.portrait.src}
               alt={profile.portrait.alt}
@@ -139,8 +114,8 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* bottom link columns — frosted strip */}
-        <div className="mt-10 flex flex-col gap-8 rounded-2xl border border-white/50 bg-cream/55 p-5 shadow-[0_8px_30px_rgba(17,17,16,0.06)] backdrop-blur-lg sm:flex-row sm:items-start sm:justify-between sm:p-6">
+        {/* bottom link columns */}
+        <div className="mt-28 flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-[14px] font-normal text-muted">What I do</h2>
             <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-[15px] font-medium">
