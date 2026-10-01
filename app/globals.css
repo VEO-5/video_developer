@@ -22,3 +22,10 @@ body {
   background: #4b1fff;
   color: #ffffff;
 }
+
+/* Custom Figma cursor lives only inside #projects — hide native there */
+.projects-cursor-active #projects,
+.projects-cursor-active #projects a,
+.projects-cursor-active #projects button {
+  cursor: none;
+}
