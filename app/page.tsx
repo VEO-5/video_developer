@@ -9,7 +9,7 @@ export default function Home() {
       <Hero />
       <Projects />
       <Faq />
-      <FigmaCursor name="Projects" />
+      <FigmaCursor name="Projects" color="#4b1fff" />
     </main>
   );
 }
